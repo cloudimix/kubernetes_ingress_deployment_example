@@ -1,0 +1,35 @@
+---
+- name: Example app with ingress rules deployment on kubernetes cluster
+  hosts: localhost
+  become: no
+  gather_facts: no
+  tasks:
+    - name: Create app directory
+      file:
+        path: "{{ app_dest }}"
+        state: directory
+        mode: 0775
+
+    - name: Download manifests
+      get_url:
+        url: "{{ app_main_url }}{{ item }}"
+        dest: "{{ app_dest }}"
+      with_items: "{{ app_files }}"
+
+    - name: Requirements - pip
+      apt:
+        name: python3-pip
+        state: present
+
+    - name: Requirements - python kubernetes module
+      pip:
+        name: kubernetes
+        state: present
+
+    - name: Manifests deploying
+      k8s:
+        kubeconfig: "{{ artifacts_dir }}config"
+        namespace: default
+        state: present
+        src: "{{ app_dest }}{{ item }}"
+      with_items: "{{ app_files }}"
